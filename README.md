@@ -29,7 +29,8 @@ npm run preview   # previsualiza el build
 ```
 CODEVIA-PORTFOLIO-HUGO/
 ├── Dockerfile              # multi-etapa: node build → nginx sirve dist/
-├── nginx.conf              # server_name literal + cache y cabeceras de seguridad
+├── nginx.conf              # server_name literal + política de cache
+├── security-headers.conf   # cabeceras de seguridad — ver aviso más abajo
 ├── index.html              # metas, OG, JSON-LD y el script inline del tema
 ├── tailwind.config.js      # tokens de diseño y keyframes
 ├── fotos-originales/       # material de referencia — fuera del repo y del build
@@ -251,6 +252,26 @@ cd ../deploy
 make hugo-up          # primera vez
 make rebuild-hugo     # tras cambiar algo del portfolio
 make hugo-logs        # ver logs
+```
+
+### ⚠️ Las cabeceras de seguridad van en un `include`, y no es por gusto
+
+En nginx **`add_header` no se acumula entre niveles**: en cuanto un `location`
+declara una `add_header` propia, **descarta todas las heredadas del `server`**.
+
+Este sitio tiene cuatro locations con su propio `Cache-Control`, así que con las
+cabeceras de seguridad declaradas solo a nivel de `server` **desaparecían de esas
+respuestas — incluida la del HTML**, que es justo donde más falta hacen. Se detectó
+ya en producción: `robots.txt` las llevaba y la página no.
+
+Por eso viven en `security-headers.conf` y se hace `include` en el `server` **y en
+cada location que tenga `add_header`**. Si añades un location con `add_header`,
+mete el include también.
+
+Comprobarlo tras un despliegue:
+
+```bash
+curl -sI https://hugo.codeviaesp.com/ | grep -i 'x-frame-options\|x-content-type'
 ```
 
 ### Requisito previo — DNS
