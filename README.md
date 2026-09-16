@@ -274,6 +274,72 @@ Comprobarlo tras un despliegue:
 curl -sI https://hugo.codeviaesp.com/ | grep -i 'x-frame-options\|x-content-type'
 ```
 
+### Despliegue automático
+
+Cada push a `main` dispara `.github/workflows/deploy.yml`, que primero comprueba que
+el proyecto compila y solo entonces avisa al servidor. **No hace falta entrar por SSH
+para publicar un cambio.**
+
+Para ver qué pasó: pestaña **Actions** del repositorio. Si el despliegue falla, el
+workflow sale en rojo y GitHub manda un correo.
+
+#### Cómo está montada la seguridad
+
+La clave SSH que guarda GitHub **no puede hacer nada más que redesplegar esta web**.
+En el `authorized_keys` del servidor está registrada con `command="..."`, así que el
+servidor ignora cualquier comando que le manden y ejecuta siempre el mismo script.
+Aunque alguien se hiciera con la clave, no tendría una consola: solo podría lanzar el
+redespliegue.
+
+El script vive **en el servidor**, en `/opt/codevia/deploy-portfolio.sh`, y no en este
+repositorio, a propósito: si estuviera aquí, quien pudiera modificar el repo podría
+cambiar lo que se ejecuta y la restricción no serviría de nada. **Si tocas ese script,
+acuérdate de que este README es la documentación pero la copia que manda es la del
+servidor.**
+
+Contenido del script:
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPO=/opt/codevia/CODEVIA-PORTFOLIO-HUGO
+DEPLOY=/opt/codevia/deploy
+
+echo "==> Traer el código"
+git -C "$REPO" fetch --prune origin
+git -C "$REPO" reset --hard origin/main
+
+cd "$DEPLOY"
+
+echo "==> Construir la imagen"
+docker compose build portfolio-hugo
+
+echo "==> Validar la configuración de nginx"
+docker compose run --rm --no-deps portfolio-hugo nginx -t
+
+echo "==> Levantar"
+docker compose up -d --no-deps portfolio-hugo
+
+echo "==> Limpiar imágenes huérfanas"
+docker image prune -f >/dev/null
+
+echo "==> Comprobar"
+sleep 5
+curl -fsS -o /dev/null -w 'HTTP %{http_code}\n' https://hugo.codeviaesp.com/
+echo "Despliegue correcto"
+```
+
+Dos detalles del script que importan:
+
+- **`reset --hard` en vez de `git pull`.** Esa carpeta del servidor es una copia de
+  trabajo de despliegue, no un sitio donde editar: si alguien tocó algo ahí, un `pull`
+  daría conflicto y el despliegue se quedaría a medias. El `reset` deja siempre
+  exactamente lo que hay en `main`.
+- **El `nginx -t` va antes del `up`.** Prueba la configuración dentro de la imagen
+  nueva sin tocar el contenedor que está sirviendo. Con `set -e`, si falla el script
+  aborta ahí y la web sigue en pie con la versión anterior.
+
 ### Requisito previo — DNS
 
 Hace falta un registro **A** de `hugo.codeviaesp.com` apuntando a la IP del

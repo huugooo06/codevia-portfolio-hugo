@@ -1,0 +1,64 @@
+name: Desplegar en producción
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:        # permite lanzarlo a mano desde la pestaña Actions
+
+# Dos pushes seguidos no pueden desplegar a la vez. El segundo espera al
+# primero en vez de pisarlo a medio build.
+concurrency:
+  group: despliegue-produccion
+  cancel-in-progress: false
+
+jobs:
+  # ───────────────────────────────────────────────────────────
+  # 1. Comprobar que compila ANTES de tocar el servidor.
+  #    El runner de GitHub es gratis y tiene 16 GB; el VPS tiene
+  #    1,6 GB y está sirviendo la web. Si algo va a fallar, que
+  #    falle aquí.
+  # ───────────────────────────────────────────────────────────
+  verificar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npm run build
+
+  # ───────────────────────────────────────────────────────────
+  # 2. Avisar al servidor de que se actualice.
+  #    No se manda ningún comando: la clave está restringida en
+  #    el servidor a ejecutar un único script (command="..." en
+  #    authorized_keys). Aunque la clave se filtrara, lo único
+  #    que podría hacer quien la tuviera es redesplegar la web.
+  # ───────────────────────────────────────────────────────────
+  desplegar:
+    needs: verificar
+    runs-on: ubuntu-latest
+    steps:
+      - name: Preparar la clave SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_despliegue
+          chmod 600 ~/.ssh/id_despliegue
+          echo "${{ secrets.SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Lanzar el despliegue
+        run: |
+          ssh -i ~/.ssh/id_despliegue \
+              -o IdentitiesOnly=yes \
+              -o BatchMode=yes \
+              -o ConnectTimeout=20 \
+              "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
+              desplegar
+
+      - name: Borrar la clave
+        if: always()
+        run: rm -f ~/.ssh/id_despliegue
