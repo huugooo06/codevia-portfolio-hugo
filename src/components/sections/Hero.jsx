@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import {
-  AnimatePresence, motion, useMotionValue, useReducedMotion,
+  AnimatePresence, motion, useMotionValue,
   useScroll, useSpring, useTransform,
 } from 'framer-motion'
+import { useMovimientoReducido } from '../../hooks/useMovimientoReducido'
 import { hero, marqueeWords } from '../../data/content'
 import { CharReveal } from '../ui/TextReveal'
 import { Button, Eyebrow, Marquee } from '../ui/Bits'
@@ -13,7 +14,7 @@ import { Magnetic } from '../ui/Magnetic'
 /* Retrato con paralaje: sigue el cursor suavemente y se aleja al hacer scroll. */
 function Portrait() {
   const ref = useRef(null)
-  const reduced = useReducedMotion()
+  const reduced = useMovimientoReducido()
   const [failed, setFailed] = useState(false)
 
   const mx = useMotionValue(0)
@@ -37,14 +38,16 @@ function Portrait() {
   }, [mx, my, reduced])
 
   return (
-    <motion.figure
+    /* La ENTRADA va en la <figure> con CSS y el PARALAJE en el div de dentro
+       con Framer Motion. Separados a posta: son dos elementos distintos porque
+       los dos animan `transform` y en el mismo nodo se pisarían — y, sobre
+       todo, porque así la foto aparece con el HTML sin esperar al JavaScript.
+       El paralaje llega cuando llegue; es un extra, no la presencia. */
+    <figure
       ref={ref}
-      initial={{ opacity: 0, scale: 0.92, y: 30 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
-      transition={{ duration: 0.8, delay: 0.08, ease: [0.22, 0.8, 0.32, 1] }}
-      style={reduced ? undefined : { y, scale }}
-      className="relative mx-auto w-full max-w-[320px] lg:max-w-none"
+      className="entra-foto relative mx-auto w-full max-w-[320px] lg:max-w-none"
     >
+      <motion.div style={reduced ? undefined : { y, scale }}>
       <motion.div
         style={reduced ? undefined : { rotateX, rotateY, transformPerspective: 1100 }}
         className="relative aspect-square overflow-hidden rounded-xl border border-line
@@ -111,14 +114,15 @@ function Portrait() {
           className="pointer-events-none absolute inset-3 rounded-[inherit] border border-brand/25"
         />
       </motion.div>
-    </motion.figure>
+      </motion.div>
+    </figure>
   )
 }
 
 /* Rol que va rotando debajo del nombre. */
 function RotatingRole() {
   const [i, setI] = useState(0)
-  const reduced = useReducedMotion()
+  const reduced = useMovimientoReducido()
 
   useEffect(() => {
     if (reduced) return
@@ -128,7 +132,11 @@ function RotatingRole() {
 
   return (
     <span className="relative inline-flex min-h-[1.6em] items-center">
-      <AnimatePresence mode="wait">
+      {/* `initial={false}` en el AnimatePresence: sin esto el PRIMER rol se
+          escribiría en el HTML del build con opacidad 0 y el móvil vería
+          "Especializado en" a medias hasta que cargara el JavaScript. Así el
+          primero está puesto de salida y solo se animan los relevos. */}
+      <AnimatePresence mode="wait" initial={false}>
         <motion.span
           key={i}
           initial={{ opacity: 0, y: 14, filter: 'blur(6px)' }}
@@ -146,24 +154,29 @@ function RotatingRole() {
 }
 
 /*
- * El hero se anima AL MONTAR, no al entrar en pantalla.
+ * La entrada del hero va en CSS (clase `.entra` en index.css), NO en Framer
+ * Motion. Dos razones, por orden de importancia:
  *
- * Antes usaba `whileInView` como el resto de secciones y en móvil se quedaba en
- * blanco: allí el retrato va primero y empuja el texto hacia abajo, y el margen
- * inferior negativo del viewport recortaba aún más el área de detección, así que
- * el IntersectionObserver no lo daba por visible hasta que el usuario bajaba.
- * Para algo que está a la vista desde el primer pintado el observador no aporta
- * nada: solo añade una carrera contra la carga de fuentes, la imagen y la barra
- * del navegador, que van moviendo el layout bajo sus pies.
+ * 1. El hero es lo primero que se ve y su HTML ya llega escrito desde el build.
+ *    La hoja de estilos es bloqueante y viaja en el primer viaje, así que la
+ *    animación arranca con la página. Con Framer Motion habría que esperar a
+ *    que bajen y se ejecuten ~140 KB de JavaScript: medido en un móvil con 4G
+ *    flojo, 3,8 s con el texto invisible. Era exactamente lo que se reportó.
+ * 2. Antes esto usaba `whileInView`, como el resto de secciones, y en móvil ni
+ *    siquiera se disparaba: allí el retrato va primero y empuja el texto fuera
+ *    del área de detección del IntersectionObserver.
+ *
+ * Framer Motion se queda para lo que de verdad necesita JavaScript: el
+ * paralaje, la inclinación con el cursor y los revelados por scroll de las
+ * secciones de abajo.
  */
-const entrada = (delay, duration = 0.6) => ({
-  initial: { opacity: 0, y: 14 },
-  animate: { opacity: 1, y: 0 },
-  transition: { duration, delay, ease: [0.22, 0.8, 0.32, 1] },
+const entrada = (retraso, clases = '') => ({
+  className: `entra ${clases}`,
+  style: { '--retraso': `${retraso}s` },
 })
 
 export function Hero() {
-  const reduced = useReducedMotion()
+  const reduced = useMovimientoReducido()
 
   return (
     <section id="top" className="relative isolate overflow-hidden pt-28 lg:pt-40">
@@ -191,38 +204,33 @@ export function Hero() {
         </div>
 
         <div className="order-2 lg:order-1">
-          <motion.div {...entrada(0.05)}>
+          <div {...entrada(0.05)}>
             <Eyebrow>{hero.eyebrow}</Eyebrow>
-          </motion.div>
+          </div>
 
           <h1 className="text-display-xl mt-5">
-            <CharReveal text={hero.first} className="block" delay={0.12} immediate />
+            <CharReveal text={hero.first} className="block" delay={0.12} />
             <CharReveal
               text={hero.last}
               className="block italic text-gradient"
               delay={0.28}
-              immediate
             />
           </h1>
 
-          <motion.p
-            {...entrada(0.45)}
-            className="mt-6 max-w-[46ch] text-[clamp(1rem,1.5vw,1.15rem)] leading-snug"
-          >
+          <p {...entrada(0.45, 'mt-6 max-w-[46ch] text-[clamp(1rem,1.5vw,1.15rem)] leading-snug')}>
             Especializado en <RotatingRole />
-          </motion.p>
+          </p>
 
-          <motion.p
-            {...entrada(0.52)}
-            className="mt-5 max-w-[52ch] text-[clamp(1.05rem,1.35vw,1.2rem)] leading-relaxed text-ink-soft"
+          <p
+            {...entrada(
+              0.52,
+              'mt-5 max-w-[52ch] text-[clamp(1.05rem,1.35vw,1.2rem)] leading-relaxed text-ink-soft',
+            )}
           >
             {hero.lead}
-          </motion.p>
+          </p>
 
-          <motion.div
-            {...entrada(0.6)}
-            className="mt-9 flex flex-wrap gap-3"
-          >
+          <div {...entrada(0.6, 'mt-9 flex flex-wrap gap-3')}>
             <Magnetic strength={0.25}>
               <Button href="#proyectos">
                 Ver proyectos
@@ -232,13 +240,15 @@ export function Hero() {
             <Magnetic strength={0.25}>
               <Button href="#contacto" variant="ghost">Contactar</Button>
             </Magnetic>
-          </motion.div>
+          </div>
 
-          <motion.dl
-            {...entrada(0.68)}
-            className="mt-11 grid grid-cols-3 gap-x-4 border-t border-line-soft pt-5
-                       [&>*:not(:first-child)]:border-l [&>*:not(:first-child)]:border-line-soft
-                       [&>*:not(:first-child)]:pl-4 sm:gap-x-6 sm:[&>*:not(:first-child)]:pl-6"
+          <dl
+            {...entrada(
+              0.68,
+              `mt-11 grid grid-cols-3 gap-x-4 border-t border-line-soft pt-5
+               [&>*:not(:first-child)]:border-l [&>*:not(:first-child)]:border-line-soft
+               [&>*:not(:first-child)]:pl-4 sm:gap-x-6 sm:[&>*:not(:first-child)]:pl-6`,
+            )}
           >
             {hero.stats.map((s) => (
               <div key={s.label}>
@@ -250,16 +260,13 @@ export function Hero() {
                 </dd>
               </div>
             ))}
-          </motion.dl>
+          </dl>
         </div>
       </div>
 
       {/* Indicador de scroll */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.95 }}
-        className="hidden justify-center pb-8 lg:flex"
+      <div
+        {...entrada(0.95, 'hidden justify-center pb-8 lg:flex')}
         aria-hidden="true"
       >
         <motion.span
@@ -269,7 +276,7 @@ export function Hero() {
         >
           <Icon name="down" className="h-5 w-5" />
         </motion.span>
-      </motion.div>
+      </div>
 
       <Marquee words={marqueeWords} />
     </section>

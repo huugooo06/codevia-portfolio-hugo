@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
-import { motion, useMotionValue, useSpring, useReducedMotion } from 'framer-motion'
+import { motion, useMotionValue, useSpring } from 'framer-motion'
+import { useMovimientoReducido } from '../hooks/useMovimientoReducido'
 
 /**
  * Halo suave que sigue al cursor. Solo en dispositivos con puntero fino
  * (ratón/trackpad) — en táctil no aporta nada y gastaría batería.
  */
 export function CursorGlow() {
-  const reduced = useReducedMotion()
+  const reduced = useMovimientoReducido()
   const [enabled, setEnabled] = useState(false)
 
   const x = useSpring(useMotionValue(-500), { stiffness: 90, damping: 22, mass: 0.6 })

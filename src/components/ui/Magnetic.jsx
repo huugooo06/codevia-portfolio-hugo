@@ -1,5 +1,6 @@
 import { useRef } from 'react'
-import { motion, useMotionValue, useSpring, useReducedMotion } from 'framer-motion'
+import { motion, useMotionValue, useSpring } from 'framer-motion'
+import { useMovimientoReducido } from '../../hooks/useMovimientoReducido'
 
 /**
  * Elemento "magnético": se desplaza hacia el cursor cuando pasa por encima.
@@ -7,7 +8,7 @@ import { motion, useMotionValue, useSpring, useReducedMotion } from 'framer-moti
  */
 export function Magnetic({ children, className = '', strength = 0.35, as = 'div', ...rest }) {
   const ref = useRef(null)
-  const reduced = useReducedMotion()
+  const reduced = useMovimientoReducido()
 
   const x = useSpring(useMotionValue(0), { stiffness: 260, damping: 18, mass: 0.35 })
   const y = useSpring(useMotionValue(0), { stiffness: 260, damping: 18, mass: 0.35 })

@@ -1,6 +1,7 @@
-import { motion, useReducedMotion } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { Reveal } from './Reveal'
 import { TextReveal } from './TextReveal'
+import { useMovimientoReducido } from '../../hooks/useMovimientoReducido'
 
 /* ─────────────── Etiqueta de sección ─────────────── */
 export function Eyebrow({ children, className = '', center = false }) {
@@ -76,7 +77,7 @@ export function LiveDot({ className = '' }) {
 
 /* ─────────────── Marquesina infinita ─────────────── */
 export function Marquee({ words, className = '' }) {
-  const reduced = useReducedMotion()
+  const reduced = useMovimientoReducido()
   // Se duplica la lista porque la animación desplaza justo un -50%:
   // al llegar al final la segunda copia ocupa la posición de la primera.
   const loop = [...words, ...words]

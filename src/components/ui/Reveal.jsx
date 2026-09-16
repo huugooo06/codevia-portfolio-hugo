@@ -1,4 +1,5 @@
-import { motion, useReducedMotion } from 'framer-motion'
+import { motion } from 'framer-motion'
+import { useMovimientoReducido } from '../../hooks/useMovimientoReducido'
 
 const OFFSETS = {
   up: { y: 40, x: 0 },
@@ -34,7 +35,7 @@ const VIEWPORT = () => ({ once: false, amount: 0, margin: '0px 0px -22% 0px' })
  * cualquier transición.
  */
 function useEntry(from = 'up', duration = 0.75) {
-  const reduced = useReducedMotion()
+  const reduced = useMovimientoReducido()
   const offset = reduced ? OFFSETS.none : (OFFSETS[from] || OFFSETS.up)
   return {
     reduced,
@@ -86,7 +87,7 @@ export function RevealGroup({
   stagger = 0.08,
   ...rest
 }) {
-  const reduced = useReducedMotion()
+  const reduced = useMovimientoReducido()
   const Tag = motion[as] || motion.div
 
   return (
@@ -124,7 +125,7 @@ const SOFT_ITEM = {
 }
 
 export function RevealItem({ children, as = 'div', className = '', ...rest }) {
-  const reduced = useReducedMotion()
+  const reduced = useMovimientoReducido()
   const Tag = motion[as] || motion.div
 
   return (

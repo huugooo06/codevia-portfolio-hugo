@@ -11,7 +11,7 @@ import { Method } from './components/sections/Method'
 import { Contact, Footer } from './components/sections/Contact'
 
 export default function App() {
-  const { theme, toggle } = useTheme()
+  const { toggle } = useTheme()
 
   return (
     <>
@@ -26,7 +26,7 @@ export default function App() {
 
       <ScrollProgress />
       <CursorGlow />
-      <Nav theme={theme} onToggleTheme={toggle} />
+      <Nav onToggleTheme={toggle} />
 
       <main id="main">
         <Hero />

@@ -1,5 +1,6 @@
 import { useRef } from 'react'
-import { motion, useMotionValue, useSpring, useTransform, useReducedMotion } from 'framer-motion'
+import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion'
+import { useMovimientoReducido } from '../../hooks/useMovimientoReducido'
 
 /**
  * Tarjeta con inclinación 3D y foco de luz que sigue al cursor.
@@ -10,7 +11,7 @@ import { motion, useMotionValue, useSpring, useTransform, useReducedMotion } fro
  */
 export function TiltCard({ children, className = '', intensity = 6, spotlight = true }) {
   const ref = useRef(null)
-  const reduced = useReducedMotion()
+  const reduced = useMovimientoReducido()
 
   const mx = useMotionValue(0.5)
   const my = useMotionValue(0.5)

@@ -5,8 +5,14 @@ import { useCallback, useEffect, useState } from 'react'
  * primer paint, así que aquí solo lo leemos del DOM y ofrecemos el toggle.
  */
 export function useTheme() {
-  const [theme, setTheme] = useState(
-    () => document.documentElement.getAttribute('data-theme') || 'dark'
+  /* El guard de `document` es por el prerenderizado del build, que corre en
+     Node: allí no hay DOM. Devolver 'dark' coincide con lo que escribe el
+     script inline del <head> mientras no haya preferencia guardada, así que el
+     HTML generado y el primer render del navegador no discrepan. */
+  const [theme, setTheme] = useState(() =>
+    typeof document === 'undefined'
+      ? 'dark'
+      : document.documentElement.getAttribute('data-theme') || 'dark'
   )
 
   useEffect(() => {

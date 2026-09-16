@@ -7,7 +7,9 @@ import { Magnetic } from './ui/Magnetic'
 
 const NAV_IDS = nav.map((n) => n.id)
 
-export function Nav({ theme, onToggleTheme }) {
+/* Sin prop `theme`: el icono del conmutador lo decide CSS con el `data-theme`
+   del <html>, no el estado de React. Ver el comentario del botón. */
+export function Nav({ onToggleTheme }) {
   const [stuck, setStuck] = useState(false)
   const [open, setOpen] = useState(false)
   const active = useActiveSection(NAV_IDS)
@@ -90,18 +92,19 @@ export function Nav({ theme, onToggleTheme }) {
             className="grid h-[38px] w-[38px] place-items-center rounded-[10px] border border-line
                        text-ink-soft transition-colors hover:border-brand hover:bg-brand/10 hover:text-ink"
           >
-            <AnimatePresence mode="wait" initial={false}>
-              <motion.span
-                key={theme}
-                initial={{ rotate: -90, opacity: 0, scale: 0.6 }}
-                animate={{ rotate: 0, opacity: 1, scale: 1 }}
-                exit={{ rotate: 90, opacity: 0, scale: 0.6 }}
-                transition={{ duration: 0.28, ease: [0.22, 0.8, 0.32, 1] }}
-                className="grid place-items-center"
-              >
-                <Icon name={theme === 'light' ? 'sun' : 'moon'} className="h-[19px] w-[19px]" />
-              </motion.span>
-            </AnimatePresence>
+            {/* Los DOS iconos van siempre en el DOM y es CSS quien enseña el que
+                toca, mirando el `data-theme` del <html>. No es rebuscado: el
+                HTML se genera en el build, que no sabe qué tema tiene cada
+                visitante, así que si el icono dependiera del estado de React
+                bastaría con tener el tema claro para que el marcado recibido no
+                coincidiera con el primer render — y ante eso React tira el HTML
+                pregenerado entero y vuelve a pintar desde cero, que es justo lo
+                que hace lenta la página en el móvil.
+                De paso el conmutador ya funciona antes de que cargue el JS. */}
+            <span className="grid place-items-center">
+              <Icon name="sun" className="icono-tema icono-tema-sol h-[19px] w-[19px]" />
+              <Icon name="moon" className="icono-tema icono-tema-luna h-[19px] w-[19px]" />
+            </span>
           </button>
 
           <button

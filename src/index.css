@@ -128,6 +128,96 @@
 @layer components {
   .wrap { @apply w-full max-w-wrap mx-auto px-5 sm:px-8 lg:px-12; }
 
+  /* ───────── Entrada del hero, en CSS y no en JavaScript ─────────
+     A propósito, y es la diferencia entre que el móvil vea el texto en medio
+     segundo o en cuatro. El HTML del hero llega ya escrito desde el build, y
+     esta hoja de estilos es bloqueante y viaja en el primer viaje: la animación
+     arranca con la página. Si la entrada dependiera de Framer Motion habría que
+     esperar a que bajen, se parseen y se ejecuten ~140 KB de JavaScript, con el
+     texto en opacidad 0 mientras tanto.
+     `both` como fill-mode es imprescindible: mantiene el estado inicial durante
+     el retraso, si no el texto parpadearía visible antes de empezar. */
+  @keyframes entrar {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: none; }
+  }
+  .entra {
+    animation: entrar .6s cubic-bezier(.22,.8,.32,1) both;
+    animation-delay: var(--retraso, 0s);
+  }
+
+  /* Cortina del nombre: cada letra sube desde detrás de su propio recorte.
+     `--i` es el índice de la letra, y escalona sin una línea de JavaScript. */
+  @keyframes cortina {
+    from { opacity: 0; transform: translateY(115%); }
+    to   { opacity: 1; transform: none; }
+  }
+  .cortina-letra {
+    display: inline-block;
+    animation: cortina .85s cubic-bezier(.22,.8,.32,1) both;
+    animation-delay: calc(var(--retraso, 0s) + var(--i, 0) * .04s);
+  }
+
+  @keyframes entrar-foto {
+    from { opacity: 0; transform: translateY(30px) scale(.92); }
+    to   { opacity: 1; transform: none; }
+  }
+  .entra-foto {
+    animation: entrar-foto .8s cubic-bezier(.22,.8,.32,1) both;
+    animation-delay: var(--retraso, .08s);
+  }
+
+  /* ───────── Pintar solo lo que se ve ─────────
+     Con el HTML ya generado en el build, el navegador calculaba estilos y
+     pintaba las SIETE secciones enteras antes de enseñar nada. Medido en un
+     móvil de gama media con 4G flojo: 2.324 ms hasta el primer pintado, de los
+     que 1,2 s eran una sola tarea haciendo esa cuenta. Con `content-visibility`
+     ese trabajo se aplaza hasta que la sección se acerca a la pantalla, y el
+     primer pintado baja a 1.308 ms.
+
+     El contenido NO desaparece: sigue en el HTML, se indexa y el buscador del
+     navegador lo encuentra. Es trabajo aplazado, no contenido ausente.
+
+     `contain-intrinsic-size` lleva la altura real medida de cada sección para
+     que la barra de scroll no dé saltos ni se descoloquen los enlaces del menú
+     mientras se baja. El `auto` de delante hace que el navegador sustituya la
+     estimación por la medida real en cuanto pinta la sección una vez, así que
+     el número solo importa para el primer cálculo. Si se cambia mucho el
+     contenido de una sección, conviene volver a medirla.
+     El hero queda fuera: es justo lo que hay que pintar cuanto antes. */
+  main > section:not(#top) { content-visibility: auto; }
+
+  #sobre-mi    { contain-intrinsic-size: auto 1311px; }
+  #stack       { contain-intrinsic-size: auto 1710px; }
+  #proyectos   { contain-intrinsic-size: auto 2206px; }
+  #trayectoria { contain-intrinsic-size: auto 980px; }
+  #metodo      { contain-intrinsic-size: auto 1055px; }
+  #contacto    { contain-intrinsic-size: auto 520px; }
+
+  @media (min-width: 1024px) {
+    #sobre-mi    { contain-intrinsic-size: auto 864px; }
+    #stack       { contain-intrinsic-size: auto 955px; }
+    #proyectos   { contain-intrinsic-size: auto 1816px; }
+    #trayectoria { contain-intrinsic-size: auto 890px; }
+    #metodo      { contain-intrinsic-size: auto 691px; }
+    #contacto    { contain-intrinsic-size: auto 648px; }
+  }
+
+  /* Conmutador de tema: los dos iconos apilados en la misma celda y CSS decide
+     cuál se ve, según el `data-theme` del <html>. Así el botón ya muestra lo
+     correcto en el HTML del build, sin saber el tema del visitante, y el
+     intercambio se anima sin JavaScript. */
+  .icono-tema {
+    grid-area: 1 / 1;
+    transition: opacity .28s cubic-bezier(.22,.8,.32,1),
+                transform .28s cubic-bezier(.22,.8,.32,1);
+  }
+  :root[data-theme='light'] .icono-tema-luna,
+  :root:not([data-theme='light']) .icono-tema-sol {
+    opacity: 0;
+    transform: rotate(90deg) scale(.6);
+  }
+
   /* Texto con degradado de marca — se usa en el apellido del hero */
   .text-gradient {
     background-image: linear-gradient(105deg,
@@ -145,5 +235,20 @@
     animation-duration: .001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: .001ms !important;
+  }
+
+  /* La regla de arriba deja TODAS las animaciones en 0,001 ms, lo que
+     convertiría la entrada del hero en un salto seco. Aquí se recupera un
+     fundido sin desplazamiento, que es lo que "movimiento reducido" pide de
+     verdad: evitar desplazamientos amplios, no prohibir toda transición.
+     Mismo criterio que el resto de revelados del sitio.
+     Gana al `*` de arriba pese al `!important` de aquel porque un selector de
+     clase tiene más especificidad que el universal. */
+  @keyframes entrar      { from { opacity: 0 } to { opacity: 1 } }
+  @keyframes cortina     { from { opacity: 0 } to { opacity: 1 } }
+  @keyframes entrar-foto { from { opacity: 0 } to { opacity: 1 } }
+
+  .entra, .entra-foto, .cortina-letra {
+    animation-duration: .5s !important;
   }
 }
