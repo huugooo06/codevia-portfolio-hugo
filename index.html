@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hugo Córdoba — Desarrollador de Aplicaciones Multiplataforma</title>
+
+<meta name="description" content="Hugo Córdoba, Técnico Superior en Desarrollo de Aplicaciones Multiplataforma y Técnico en Sistemas Microinformáticos y Redes. Desarrollo web, apps y despliegue en servidor. Portfolio y contacto.">
+<meta name="author" content="Hugo Córdoba">
+<meta name="theme-color" content="#0b0d12">
+<link rel="canonical" href="https://hugo.codeviaesp.com/">
+
+<meta property="og:type" content="profile">
+<meta property="og:locale" content="es_ES">
+<meta property="og:site_name" content="Hugo Córdoba">
+<meta property="og:title" content="Hugo Córdoba — Desarrollador de Aplicaciones Multiplataforma">
+<meta property="og:description" content="Construyo aplicaciones y sitios web de principio a fin: del código al servidor en producción.">
+<meta property="og:url" content="https://hugo.codeviaesp.com/">
+<meta property="og:image" content="https://hugo.codeviaesp.com/img/og-cover.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+
+<!-- El favicon es la foto recortada. No se enlaza favicon.svg: los navegadores
+     que admiten SVG lo prefieren y taparía la foto. -->
+<link rel="icon" href="/img/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="/img/favicon-16.png" type="image/png" sizes="16x16">
+<link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+
+<link rel="preload" href="/fonts/fraunces-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+
+<script>
+  // Resuelve el tema ANTES del primer paint para que no haya destello de color.
+  // Debe quedarse inline aquí: desde el bundle de React llegaría tarde.
+  (function () {
+    var t = null;
+    try { t = localStorage.getItem('hc-theme'); } catch (e) {}
+    if (t !== 'light' && t !== 'dark') {
+      t = (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches)
+        ? 'light' : 'dark';
+    }
+    document.documentElement.setAttribute('data-theme', t);
+  })();
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "name": "Hugo Córdoba",
+  "jobTitle": "Desarrollador de Aplicaciones Multiplataforma",
+  "url": "https://hugo.codeviaesp.com/",
+  "image": "https://hugo.codeviaesp.com/img/hugo-portada.jpg",
+  "email": "mailto:hugocor0609@gmail.com",
+  "nationality": "ES",
+  "hasCredential": [
+    { "@type": "EducationalOccupationalCredential", "credentialCategory": "Técnico Superior", "name": "Desarrollo de Aplicaciones Multiplataforma (DAM)" },
+    { "@type": "EducationalOccupationalCredential", "credentialCategory": "Técnico", "name": "Sistemas Microinformáticos y Redes (SMR)" }
+  ],
+  "knowsAbout": ["Java", "JavaScript", "React", "Vue.js", "Node.js", "SQL", "Docker", "Linux", "Redes"],
+  "worksFor": { "@type": "Organization", "name": "Codevia", "url": "https://codeviaesp.com" }
+}
+</script>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+node_modules
+dist
+.DS_Store
+*.local
+
+# Fotos de referencia sin procesar — no van al repositorio
+fotos-originales/

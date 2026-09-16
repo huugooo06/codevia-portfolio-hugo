@@ -1,0 +1,149 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─────────────── Fuentes auto-alojadas (sin CDN / RGPD limpio) ─────────────── */
+@font-face {
+  font-family: 'Fraunces';
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url('/fonts/fraunces-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+                 U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+                 U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Fraunces';
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url('/fonts/fraunces-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304,
+                 U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB,
+                 U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/fonts/inter-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+                 U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+                 U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/fonts/inter-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304,
+                 U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB,
+                 U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+/* ─────────────── Tokens de color (canales RGB para poder llevar opacidad) ─────────────── */
+@layer base {
+  :root {
+    --bg:         11 13 18;
+    --bg-alt:     15 18 24;
+    --surface:    20 24 34;
+    --surface-2:  27 32 44;
+    --line:       37 43 56;
+    --line-soft:  28 34 48;
+    /* Rejilla de fondo. Token aparte y no `--line-soft` porque en el tema
+       claro aquella queda a 4 puntos del fondo y la rejilla no se ve. */
+    --grid:       36 43 60;
+
+    --ink:        244 245 247;
+    --ink-soft:   185 192 205;
+    --muted:      126 134 152;
+
+    --brand:      59 123 255;
+    --brand-hi:   107 155 255;
+    --live:       52 211 153;
+
+    color-scheme: dark;
+  }
+
+  :root[data-theme='light'] {
+    --bg:         244 242 237;
+    --bg-alt:     234 231 224;
+    --surface:    252 251 248;
+    --surface-2:  255 255 255;
+    --line:       220 217 208;
+    --line-soft:  230 227 218;
+    --grid:       198 193 180;
+
+    --ink:        20 21 26;
+    --ink-soft:   60 62 71;
+    --muted:      107 110 120;
+
+    --brand:      0 82 212;
+    --brand-hi:   0 64 168;
+    --live:       15 157 107;
+
+    color-scheme: light;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 88px;
+    -webkit-text-size-adjust: 100%;
+    /* `clip` y no `hidden`: hidden convertiría la raíz en contenedor de scroll
+       y rompería position:sticky y las animaciones basadas en useScroll. */
+    overflow-x: clip;
+  }
+
+  body {
+    @apply bg-bg text-ink font-body antialiased;
+    margin: 0;
+    overflow-x: clip;
+    transition: background-color .4s cubic-bezier(.22,.8,.32,1),
+                color .4s cubic-bezier(.22,.8,.32,1);
+  }
+
+  h1, h2, h3, h4 {
+    @apply font-display font-medium;
+    font-variation-settings: 'SOFT' 0, 'WONK' 0, 'opsz' 60;
+    letter-spacing: -0.02em;
+    line-height: 1.08;
+  }
+
+  ::selection { @apply bg-brand text-white; }
+
+  :focus-visible {
+    outline: 2px solid rgb(var(--brand));
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+
+  /* Oculta la barra de scroll nativa del contenedor de chips en móvil */
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+}
+
+@layer components {
+  .wrap { @apply w-full max-w-wrap mx-auto px-5 sm:px-8 lg:px-12; }
+
+  /* Texto con degradado de marca — se usa en el apellido del hero */
+  .text-gradient {
+    background-image: linear-gradient(105deg,
+      rgb(var(--brand)) 0%, rgb(var(--brand-hi)) 52%, rgb(var(--brand)) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+}
+
+/* ─────────────── Movimiento reducido ─────────────── */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+  }
+}
