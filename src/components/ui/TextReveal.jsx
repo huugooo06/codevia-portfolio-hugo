@@ -83,11 +83,23 @@ export function TextReveal({
 
 /**
  * Variante por caracteres — se usa en el nombre del hero.
- * Usa `whileInView` en vez de `animate` para que también se repita al volver
- * arriba. Mismo cuidado: el observador va en el contenedor, no en el carácter.
+ *
+ * `immediate` cambia el disparador: con `false` (por defecto) el texto espera a
+ * entrar en pantalla; con `true` arranca al montar. Lo segundo es lo correcto
+ * para lo que ya está a la vista al cargar la página — ahí el observador no
+ * aporta nada y sí puede fallar, porque en móvil compite con la carga de
+ * fuentes, la imagen y la barra del navegador, que mueven el layout debajo de
+ * él. Ese era el fallo: en el móvil el hero se quedaba en blanco hasta que
+ * bajabas.
  */
-export function CharReveal({ text, className = '', delay = 0, stagger = 0.04 }) {
+export function CharReveal({ text, className = '', delay = 0, stagger = 0.04, immediate = false }) {
   const reduced = useReducedMotion()
+
+  /* Un solo sitio donde se decide el disparador, para que las dos ramas
+     (movimiento normal y reducido) no se separen con el tiempo. */
+  const trigger = immediate
+    ? { animate: 'show' }
+    : { whileInView: 'show', viewport: VIEWPORT(false) }
 
   if (reduced) {
     return (
@@ -98,8 +110,7 @@ export function CharReveal({ text, className = '', delay = 0, stagger = 0.04 }) 
           show: { opacity: 1, transition: { duration: 0.5, delay, ease: EASE } },
         }}
         initial="hidden"
-        whileInView="show"
-        viewport={VIEWPORT(false)}
+        {...trigger}
       >
         {text}
       </motion.span>
@@ -114,8 +125,7 @@ export function CharReveal({ text, className = '', delay = 0, stagger = 0.04 }) 
           aria-hidden="true"
           className="inline-block overflow-hidden align-bottom"
           initial="hidden"
-          whileInView="show"
-          viewport={VIEWPORT(false)}
+          {...trigger}
         >
           <motion.span
             className="inline-block"

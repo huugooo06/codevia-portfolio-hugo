@@ -41,7 +41,7 @@ function Portrait() {
       ref={ref}
       initial={{ opacity: 0, scale: 0.92, y: 30 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
-      transition={{ duration: 1, delay: 0.25, ease: [0.22, 0.8, 0.32, 1] }}
+      transition={{ duration: 0.8, delay: 0.08, ease: [0.22, 0.8, 0.32, 1] }}
       style={reduced ? undefined : { y, scale }}
       className="relative mx-auto w-full max-w-[320px] lg:max-w-none"
     >
@@ -52,16 +52,25 @@ function Portrait() {
                    lg:aspect-[4/5] lg:rounded-2xl"
       >
         {!failed ? (
-          <img
-            src="/img/hugo-portada.jpg"
-            alt="Retrato de Hugo Córdoba"
-            width={1200}
-            height={1500}
-            fetchPriority="high"
-            onError={() => setFailed(true)}
-            onLoad={(e) => { if (!e.currentTarget.naturalWidth) setFailed(true) }}
-            className="h-full w-full object-cover object-[center_18%] saturate-[.92] contrast-[1.06]"
-          />
+          /* Dos tamaños de la misma foto. Por debajo de 1024px el retrato nunca
+             pasa de 320px de ancho (max-w-[320px]), así que mandarle el original
+             de 1200px era gastar 315 KB para pintar 84 KB de imagen — y en
+             móvil eso se nota: era el "tarda en salir la foto".
+             Va con <picture> y no con srcset porque srcset deja la elección al
+             navegador, y con pantallas de 3x volvería a pedir el grande. */
+          <picture>
+            <source media="(min-width: 1024px)" srcSet="/img/hugo-portada.jpg" />
+            <img
+              src="/img/hugo-portada-760.jpg"
+              alt="Retrato de Hugo Córdoba"
+              width={1200}
+              height={1500}
+              fetchPriority="high"
+              onError={() => setFailed(true)}
+              onLoad={(e) => { if (!e.currentTarget.naturalWidth) setFailed(true) }}
+              className="h-full w-full object-cover object-[center_18%] saturate-[.92] contrast-[1.06]"
+            />
+          </picture>
         ) : (
           /* Placeholder mientras no exista la foto generada */
           <div
@@ -136,6 +145,23 @@ function RotatingRole() {
   )
 }
 
+/*
+ * El hero se anima AL MONTAR, no al entrar en pantalla.
+ *
+ * Antes usaba `whileInView` como el resto de secciones y en móvil se quedaba en
+ * blanco: allí el retrato va primero y empuja el texto hacia abajo, y el margen
+ * inferior negativo del viewport recortaba aún más el área de detección, así que
+ * el IntersectionObserver no lo daba por visible hasta que el usuario bajaba.
+ * Para algo que está a la vista desde el primer pintado el observador no aporta
+ * nada: solo añade una carrera contra la carga de fuentes, la imagen y la barra
+ * del navegador, que van moviendo el layout bajo sus pies.
+ */
+const entrada = (delay, duration = 0.6) => ({
+  initial: { opacity: 0, y: 14 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration, delay, ease: [0.22, 0.8, 0.32, 1] },
+})
+
 export function Hero() {
   const reduced = useReducedMotion()
 
@@ -165,49 +191,36 @@ export function Hero() {
         </div>
 
         <div className="order-2 lg:order-1">
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: false, amount: 0, margin: '0px 0px -14% 0px' }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-          >
+          <motion.div {...entrada(0.05)}>
             <Eyebrow>{hero.eyebrow}</Eyebrow>
           </motion.div>
 
           <h1 className="text-display-xl mt-5">
-            <CharReveal text={hero.first} className="block" delay={0.25} />
+            <CharReveal text={hero.first} className="block" delay={0.12} immediate />
             <CharReveal
               text={hero.last}
               className="block italic text-gradient"
-              delay={0.45}
+              delay={0.28}
+              immediate
             />
           </h1>
 
           <motion.p
-            initial={{ opacity: 0, y: 16 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: false, amount: 0, margin: '0px 0px -14% 0px' }}
-            transition={{ duration: 0.7, delay: 0.75 }}
+            {...entrada(0.45)}
             className="mt-6 max-w-[46ch] text-[clamp(1rem,1.5vw,1.15rem)] leading-snug"
           >
             Especializado en <RotatingRole />
           </motion.p>
 
           <motion.p
-            initial={{ opacity: 0, y: 16 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: false, amount: 0, margin: '0px 0px -14% 0px' }}
-            transition={{ duration: 0.7, delay: 0.85 }}
+            {...entrada(0.52)}
             className="mt-5 max-w-[52ch] text-[clamp(1.05rem,1.35vw,1.2rem)] leading-relaxed text-ink-soft"
           >
             {hero.lead}
           </motion.p>
 
           <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: false, amount: 0, margin: '0px 0px -14% 0px' }}
-            transition={{ duration: 0.7, delay: 0.95 }}
+            {...entrada(0.6)}
             className="mt-9 flex flex-wrap gap-3"
           >
             <Magnetic strength={0.25}>
@@ -222,10 +235,7 @@ export function Hero() {
           </motion.div>
 
           <motion.dl
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: false, amount: 0, margin: '0px 0px -14% 0px' }}
-            transition={{ duration: 0.7, delay: 1.05 }}
+            {...entrada(0.68)}
             className="mt-11 grid grid-cols-3 gap-x-4 border-t border-line-soft pt-5
                        [&>*:not(:first-child)]:border-l [&>*:not(:first-child)]:border-line-soft
                        [&>*:not(:first-child)]:pl-4 sm:gap-x-6 sm:[&>*:not(:first-child)]:pl-6"
@@ -247,9 +257,8 @@ export function Hero() {
       {/* Indicador de scroll */}
       <motion.div
         initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-            viewport={{ once: false, amount: 0, margin: '0px 0px -14% 0px' }}
-        transition={{ delay: 1.4 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.95 }}
         className="hidden justify-center pb-8 lg:flex"
         aria-hidden="true"
       >
