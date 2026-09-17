@@ -94,7 +94,34 @@ export function TextReveal({
  * El escalonado va con la variable `--i` (índice de la letra) y el retraso base
  * con `--retraso`, que hereda desde el contenedor. Reglas en `index.css`.
  */
-export function CharReveal({ text, className = '', delay = 0 }) {
+export function CharReveal({ text, className = '', delay = 0, bloque = false }) {
+  /*
+   * `bloque` es OBLIGATORIO cuando el texto lleva `.text-gradient`, y no es una
+   * preferencia estética: es una limitación real del navegador.
+   *
+   * `background-clip: text` recorta el degradado contra el texto del elemento,
+   * pero NO alcanza a descendientes que estén en su propia capa de composición
+   * — y una animación CSS de opacidad/transform crea exactamente eso. Con la
+   * cortina letra a letra, el apellido del hero se quedaba **invisible durante
+   * toda su animación** y aparecía de golpe al terminar: eso era el "se queda
+   * trabada la transición unos segundos" del móvil.
+   *
+   * Comprobado en un banco de pruebas aparte: si la animación va en el MISMO
+   * elemento que lleva el degradado (o en un envoltorio suyo), se ve bien; si
+   * va en sus descendientes, no. Así que aquí la palabra sube entera desde
+   * detrás de la máscara en vez de letra a letra. El degradado se mantiene
+   * continuo, que es lo que se perdería repitiéndolo en cada letra.
+   */
+  if (bloque) {
+    return (
+      <span className="block overflow-hidden">
+        <span className={`cortina-bloque ${className}`} style={{ '--retraso': `${delay}s` }}>
+          {text}
+        </span>
+      </span>
+    )
+  }
+
   return (
     <span
       className={`cortina ${className}`}

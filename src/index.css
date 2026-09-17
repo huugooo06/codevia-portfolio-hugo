@@ -163,8 +163,30 @@
   }
   .cortina-letra {
     display: inline-block;
-    animation: cortina .85s cubic-bezier(.22,.8,.32,1) backwards;
+    animation: cortina .7s cubic-bezier(.22,.8,.32,1) backwards;
     animation-delay: calc(var(--retraso, 0s) + var(--i, 0) * .04s);
+  }
+
+  /* La misma cortina pero de la palabra entera. Es la que hay que usar cuando
+     el texto lleva `.text-gradient`: la animación tiene que ir en el MISMO
+     elemento que el degradado, nunca en sus letras, o `background-clip: text`
+     no las alcanza y la palabra no se ve mientras anima. */
+  .cortina-bloque {
+    display: block;
+    animation: cortina .7s cubic-bezier(.22,.8,.32,1) backwards;
+    animation-delay: var(--retraso, 0s);
+  }
+
+  /* Entrada de la barra superior. También en CSS: era un `motion.header` con
+     opacidad 0, así que en el HTML pregenerado la barra llegaba invisible y no
+     aparecía hasta que cargaba el JavaScript — se veía saltar a los 2,4 s. */
+  @keyframes entrar-barra {
+    from { opacity: 0; transform: translateY(-80px); }
+    to   { opacity: 1; transform: none; }
+  }
+  .entra-barra {
+    animation: entrar-barra .7s cubic-bezier(.22,.8,.32,1) backwards;
+    animation-delay: .15s;
   }
 
   @keyframes entrar-foto {
@@ -226,11 +248,12 @@
      Mismo criterio que el resto de revelados del sitio.
      Gana al `*` de arriba pese al `!important` de aquel porque un selector de
      clase tiene más especificidad que el universal. */
-  @keyframes entrar      { from { opacity: 0 } to { opacity: 1 } }
-  @keyframes cortina     { from { opacity: 0 } to { opacity: 1 } }
-  @keyframes entrar-foto { from { opacity: 0 } to { opacity: 1 } }
+  @keyframes entrar       { from { opacity: 0 } to { opacity: 1 } }
+  @keyframes cortina      { from { opacity: 0 } to { opacity: 1 } }
+  @keyframes entrar-foto  { from { opacity: 0 } to { opacity: 1 } }
+  @keyframes entrar-barra { from { opacity: 0 } to { opacity: 1 } }
 
-  .entra, .entra-foto, .cortina-letra {
+  .entra, .entra-foto, .entra-barra, .cortina-letra, .cortina-bloque {
     animation-duration: .5s !important;
   }
 }

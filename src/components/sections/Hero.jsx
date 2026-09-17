@@ -210,10 +210,14 @@ export function Hero() {
 
           <h1 className="text-display-xl mt-5">
             <CharReveal text={hero.first} className="block" delay={0.12} />
+            {/* `bloque` porque lleva degradado: con la cortina letra a letra el
+                `background-clip: text` no llega a las letras animadas y el
+                apellido se queda invisible hasta que acaba. Ver CharReveal. */}
             <CharReveal
               text={hero.last}
               className="block italic text-gradient"
               delay={0.28}
+              bloque
             />
           </h1>
 

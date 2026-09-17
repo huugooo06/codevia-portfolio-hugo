@@ -30,11 +30,12 @@ export function Nav({ onToggleTheme }) {
   }, [])
 
   return (
-    <motion.header
-      initial={{ y: -80, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.7, delay: 0.15, ease: [0.22, 0.8, 0.32, 1] }}
-      className={`fixed inset-x-0 top-0 z-[100] border-b transition-colors duration-300 ${
+    /* Entrada en CSS (`.entra-barra`), no con Framer Motion. Como `motion.header`
+       con `initial={{opacity:0}}` la barra salía con opacidad 0 en el HTML
+       pregenerado y no aparecía hasta que cargaba el JavaScript: en el móvil se
+       la veía saltar a los 2,4 s. Mismo motivo que la entrada del hero. */
+    <header
+      className={`entra-barra fixed inset-x-0 top-0 z-[100] border-b transition-colors duration-300 ${
         stuck
           ? 'border-line-soft bg-bg/80 backdrop-blur-xl backdrop-saturate-150'
           : 'border-transparent'
@@ -160,6 +161,6 @@ export function Nav({ onToggleTheme }) {
           </motion.nav>
         )}
       </AnimatePresence>
-    </motion.header>
+    </header>
   )
 }
