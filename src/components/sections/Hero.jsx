@@ -37,9 +37,10 @@ function Portrait() {
   }, [mx, my, reduced])
 
   return (
-    /* Sin animación de entrada propia: el retrato entra con el bloque del hero,
-       a la vez que el resto. Aquí dentro solo queda el paralaje de Framer
-       Motion, que es un extra posterior y no condiciona que la foto se vea. */
+    /* La entrada la pone `.ln-retrato` desde el div de fuera; aquí dentro solo
+       queda el paralaje de Framer Motion, que es un extra posterior y no
+       condiciona que la foto se vea. Separados a posta: los dos animan
+       `transform` y en el mismo nodo se pisarían. */
     <figure
       ref={ref}
       className="relative mx-auto w-full max-w-[320px] lg:max-w-none"
@@ -151,26 +152,25 @@ function RotatingRole() {
 }
 
 /*
- * EL HERO ENTERO ENTRA COMO UN SOLO BLOQUE, CON UNA SOLA ANIMACIÓN.
+ * ENTRADA DEL HERO: la misma que la landing de Codevia, replicada a petición
+ * del usuario. Clases `ln-*` en index.css, donde están los tiempos exactos y su
+ * correspondencia con `codevia-landing/src/lib/motionVariants.js`.
  *
- * Pedido explícitamente por el usuario tras varias rondas: "quiero que salga
- * todo en bloque y en transición a la vez". Y además es lo más robusto, porque
- * elimina de raíz los dos fallos que costaron esas rondas:
+ * Va en CSS y no en Framer Motion (que es como está en la landing) porque aquí
+ * el HTML del hero llega ya escrito desde el build: la hoja de estilos es
+ * bloqueante y viaja en el primer viaje, así que la animación arranca con la
+ * página en vez de esperar a ~140 KB de JavaScript — en un móvil con 4G flojo,
+ * tres segundos de diferencia. Framer Motion se queda para lo que sí lo
+ * necesita: el paralaje, la inclinación con el cursor y los revelados de abajo.
  *
- * 1. Con la entrada escalonada, cada trozo aparecía en un instante distinto y
- *    cualquier parón del hilo principal se veía como una transición "trabada"
- *    a medias.
- * 2. `background-clip: text` (el degradado del apellido) NO alcanza a los
- *    descendientes que estén en su propia capa de composición, y una animación
- *    CSS crea exactamente eso. Con UNA animación en el contenedor, el elemento
- *    del degradado no tiene nada animado dentro y se pinta siempre bien.
- *    Comprobado en banco: animación en un envoltorio ✓, en los descendientes ✗.
+ * Que la entrada vuelva a ser escalonada obliga a mantener las dos reglas que
+ * costaron varias rondas de depuración, y que están explicadas en index.css:
+ * el elemento con `.text-gradient` no puede tener descendientes animados, y el
+ * fill-mode tiene que ser `backwards` y nunca `both`.
  *
- * Va en CSS y no en Framer Motion porque el HTML del hero ya llega escrito
- * desde el build: la hoja de estilos es bloqueante y viaja en el primer viaje,
- * así que la animación arranca con la página en lugar de esperar a ~140 KB de
- * JavaScript. Framer Motion se queda para lo que sí lo necesita: el paralaje,
- * la inclinación con el cursor y los revelados por scroll de abajo.
+ * Además, `App.jsx` no monta el resto de la página hasta que esta entrada ha
+ * terminado: si no, el trabajo de montar seis secciones cae justo encima de la
+ * animación y se ve "trabada" — que fue exactamente lo que se reportó.
  */
 
 export function Hero() {
@@ -195,33 +195,50 @@ export function Hero() {
       {/* Rejilla sutil */}
       <GridBackdrop opacity={0.5} />
 
-      {/* UNA sola clase `entra` aquí y nada animado por dentro: retrato, nombre,
-          textos, botones y datos aparecen todos a la vez, en la misma
-          transición. */}
-      <div className="entra">
+      <div>
         <div className="wrap grid items-center gap-10 pb-14 lg:grid-cols-[1.08fr_.92fr] lg:gap-16 lg:pb-24">
           {/* Retrato primero en móvil, a la derecha en escritorio */}
-          <div className="order-1 lg:order-2">
+          <div className="order-1 lg:order-2 ln-retrato">
             <Portrait />
           </div>
 
           <div className="order-2 lg:order-1">
-            <Eyebrow>{hero.eyebrow}</Eyebrow>
+            <div className="ln-etiqueta">
+              <Eyebrow>{hero.eyebrow}</Eyebrow>
+            </div>
 
+            {/* Titular con revelado por máscara, línea a línea, igual que la
+                landing: el envoltorio recorta y la línea sube desde debajo. El
+                `pb-[0.08em]` evita que el recorte corte los descendentes.
+                ⚠️ En la línea del apellido la animación va en el MISMO elemento
+                que lleva `.text-gradient`, nunca en algo de dentro: si no,
+                `background-clip: text` no lo alcanza y no se ve mientras anima. */}
             <h1 className="text-display-xl mt-5">
-              <span className="block">{hero.first}</span>
-              <span className="block italic text-gradient">{hero.last}</span>
+              <span className="block overflow-hidden pb-[0.08em]">
+                <span className="ln-linea" style={{ '--i': '0' }}>{hero.first}</span>
+              </span>
+              <span className="block overflow-hidden pb-[0.08em]">
+                <span className="ln-linea italic text-gradient" style={{ '--i': '1' }}>
+                  {hero.last}
+                </span>
+              </span>
             </h1>
 
-            <p className="mt-6 max-w-[46ch] text-[clamp(1rem,1.5vw,1.15rem)] leading-snug">
+            <p
+              className="ln-texto mt-6 max-w-[46ch] text-[clamp(1rem,1.5vw,1.15rem)] leading-snug"
+              style={{ '--retraso': '.42s' }}
+            >
               Especializado en <RotatingRole />
             </p>
 
-            <p className="mt-5 max-w-[52ch] text-[clamp(1.05rem,1.35vw,1.2rem)] leading-relaxed text-ink-soft">
+            <p
+              className="ln-texto mt-5 max-w-[52ch] text-[clamp(1.05rem,1.35vw,1.2rem)] leading-relaxed text-ink-soft"
+              style={{ '--retraso': '.5s' }}
+            >
               {hero.lead}
             </p>
 
-            <div className="mt-9 flex flex-wrap gap-3">
+            <div className="ln-texto mt-9 flex flex-wrap gap-3" style={{ '--retraso': '.62s' }}>
               <Magnetic strength={0.25}>
                 <Button href="#proyectos">
                   Ver proyectos
@@ -238,8 +255,8 @@ export function Hero() {
                          [&>*:not(:first-child)]:border-l [&>*:not(:first-child)]:border-line-soft
                          [&>*:not(:first-child)]:pl-4 sm:gap-x-6 sm:[&>*:not(:first-child)]:pl-6"
             >
-              {hero.stats.map((s) => (
-                <div key={s.label}>
+              {hero.stats.map((s, i) => (
+                <div key={s.label} className="ln-dato" style={{ '--i': String(i) }}>
                   <dt className="text-[11.5px] font-semibold uppercase tracking-[.12em] text-muted">
                     {s.label}
                   </dt>
@@ -253,7 +270,11 @@ export function Hero() {
         </div>
 
         {/* Indicador de scroll */}
-        <div className="hidden justify-center pb-8 lg:flex" aria-hidden="true">
+        <div
+          className="ln-texto hidden justify-center pb-8 lg:flex"
+          style={{ '--retraso': '1s' }}
+          aria-hidden="true"
+        >
           <motion.span
             animate={reduced ? undefined : { y: [0, 8, 0] }}
             transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}

@@ -128,46 +128,80 @@
 @layer components {
   .wrap { @apply w-full max-w-wrap mx-auto px-5 sm:px-8 lg:px-12; }
 
-  /* ───────── Entrada del hero: UNA sola animación, todo a la vez ─────────
-     Va en CSS y no en Framer Motion a propósito: es la diferencia entre que el
-     móvil vea el hero en medio segundo o en cuatro. El HTML del hero llega ya
-     escrito desde el build y esta hoja de estilos es bloqueante y viaja en el
-     primer viaje, así que la animación arranca con la página en lugar de
-     esperar a que bajen y se ejecuten ~140 KB de JavaScript.
+  /* ───────── Entrada del hero ─────────
+     Réplica de la entrada de la landing de Codevia, pedida por el usuario.
+     Los tiempos y la curva salen de `codevia-landing/src/lib/motionVariants.js`
+     y de su `sections/Hero.jsx`: etiqueta 0,5s sin retraso · líneas del titular
+     tras máscara 0,8s con retraso 0,1 + i·0,1 · imagen 0,9s a 0,45 · párrafo
+     0,6s a 0,5 · botones 0,6s a 0,62 · lista escalonada 0,08 desde 0,8.
+     Si allí se cambian, aquí hay que cambiarlos a mano: son dos proyectos.
 
-     ⚠️ `.entra` va en UN contenedor y NADA se anima por dentro. No es solo
-     estética (el usuario lo pidió así tras ver la entrada escalonada "trabarse"
-     en el móvil): es también la única forma segura de convivir con el degradado
-     del apellido. `background-clip: text` NO alcanza a los descendientes que
-     estén en su propia capa de composición, y una animación CSS de
-     opacidad/transform crea exactamente eso, así que animar las letras dejaba
-     "Córdoba" invisible mientras durase la animación. Si algún día se vuelve a
-     escalonar la entrada, el elemento con `.text-gradient` no puede tener
-     descendientes animados.
+     Va en CSS y no en Framer Motion (que es como está en la landing) porque el
+     HTML del hero llega ya escrito desde el build: la hoja de estilos es
+     bloqueante y viaja en el primer viaje, así que la animación arranca con la
+     página en vez de esperar a ~140 KB de JavaScript. En un móvil con 4G flojo
+     eso son tres segundos de diferencia.
 
-     ⚠️ El fill-mode es `backwards`, NUNCA `both`: `backwards` mantiene el
-     estado inicial durante el retraso pero SUELTA los valores al terminar.
-     `both` los deja aplicados para siempre — la animación no termina nunca de
-     verdad y el elemento se queda permanentemente en su propia capa, con el
-     mismo efecto sobre el degradado descrito arriba. */
-  @keyframes entrar {
-    from { opacity: 0; transform: translateY(16px); }
-    to   { opacity: 1; transform: none; }
+     ⚠️ DOS REGLAS QUE NO SE PUEDEN SALTAR, las dos pagadas con depuración:
+
+     1. El elemento con `.text-gradient` (el apellido) puede animarse ÉL MISMO,
+        pero NO puede tener descendientes animados. `background-clip: text` no
+        alcanza a lo que esté en su propia capa de composición, y una animación
+        CSS crea justo eso: animando las letras, "Córdoba" quedaba invisible
+        mientras durase la animación. Por eso la máscara va en el envoltorio y
+        la animación en el propio elemento del degradado, como en la landing.
+
+     2. El fill-mode es `backwards`, NUNCA `both`. `backwards` mantiene el
+        estado inicial durante el retraso pero SUELTA los valores al terminar;
+        `both` los deja para siempre, la animación no acaba nunca de verdad y el
+        elemento se queda permanentemente en su propia capa — con el mismo
+        efecto sobre el degradado que describe la regla 1. */
+  :root { --salida: cubic-bezier(.23, 1, .32, 1); }
+
+  @keyframes ln-subir-10 { from { opacity: 0; transform: translateY(10px) } to { opacity: 1; transform: none } }
+  @keyframes ln-subir-14 { from { opacity: 0; transform: translateY(14px) } to { opacity: 1; transform: none } }
+  @keyframes ln-subir-16 { from { opacity: 0; transform: translateY(16px) } to { opacity: 1; transform: none } }
+  @keyframes ln-subir-24 { from { opacity: 0; transform: translateY(24px) } to { opacity: 1; transform: none } }
+  @keyframes ln-derecha  { from { opacity: 0; transform: translateX(120px) } to { opacity: 1; transform: none } }
+  /* Sin opacidad a propósito: es un revelado por máscara, no un fundido.
+     La línea sube desde debajo del recorte del envoltorio. */
+  @keyframes ln-linea    { from { transform: translateY(115%) } to { transform: none } }
+
+  .ln-etiqueta { animation: ln-subir-10 .5s var(--salida) backwards; }
+
+  .ln-linea {
+    display: block;
+    animation: ln-linea .8s var(--salida) backwards;
+    animation-delay: calc(.1s + var(--i, 0) * .1s);
   }
-  .entra {
-    animation: entrar .7s cubic-bezier(.22,.8,.32,1) backwards;
+
+  .ln-texto {
+    animation: ln-subir-16 .6s var(--salida) backwards;
+    animation-delay: var(--retraso, 0s);
   }
 
-  /* La barra superior entra a la vez que el hero (mismo retraso: ninguno).
-     También en CSS: era un `motion.header` con opacidad 0, así que en el HTML
-     pregenerado llegaba invisible y saltaba a la vista a los 2,4 s, cuando
-     cargaba el JavaScript. */
+  .ln-dato {
+    animation: ln-subir-14 .5s var(--salida) backwards;
+    animation-delay: calc(.8s + var(--i, 0) * .08s);
+  }
+
+  /* El equivalente del logo de la landing, que allí entra desde la derecha.
+     En móvil no: ahí el retrato va arriba y a todo lo ancho, y un
+     desplazamiento horizontal se saldría de la pantalla. */
+  .ln-retrato { animation: ln-subir-24 .9s var(--salida) backwards; animation-delay: .45s; }
+  @media (min-width: 1024px) {
+    .ln-retrato { animation-name: ln-derecha; }
+  }
+
+  /* La barra superior entra con la etiqueta. También en CSS: era un
+     `motion.header` con opacidad 0, así que en el HTML pregenerado llegaba
+     invisible y saltaba a la vista a los 2,4 s, al cargar el JavaScript. */
   @keyframes entrar-barra {
     from { opacity: 0; transform: translateY(-80px); }
     to   { opacity: 1; transform: none; }
   }
   .entra-barra {
-    animation: entrar-barra .7s cubic-bezier(.22,.8,.32,1) backwards;
+    animation: entrar-barra .7s var(--salida) backwards;
   }
 
   /* ⚠️ AQUÍ NO VA `content-visibility: auto`. Se probó (2026-09-17) para
@@ -220,10 +254,17 @@
      Mismo criterio que el resto de revelados del sitio.
      Gana al `*` de arriba pese al `!important` de aquel porque un selector de
      clase tiene más especificidad que el universal. */
-  @keyframes entrar       { from { opacity: 0 } to { opacity: 1 } }
+  /* `ln-linea` normalmente NO anima opacidad (es un revelado por máscara); aquí
+     se convierte en fundido, que es justo lo que pide movimiento reducido. */
+  @keyframes ln-subir-10 { from { opacity: 0 } to { opacity: 1 } }
+  @keyframes ln-subir-14 { from { opacity: 0 } to { opacity: 1 } }
+  @keyframes ln-subir-16 { from { opacity: 0 } to { opacity: 1 } }
+  @keyframes ln-subir-24 { from { opacity: 0 } to { opacity: 1 } }
+  @keyframes ln-derecha  { from { opacity: 0 } to { opacity: 1 } }
+  @keyframes ln-linea    { from { opacity: 0 } to { opacity: 1 } }
   @keyframes entrar-barra { from { opacity: 0 } to { opacity: 1 } }
 
-  .entra, .entra-barra {
+  .ln-etiqueta, .ln-linea, .ln-texto, .ln-dato, .ln-retrato, .entra-barra {
     animation-duration: .5s !important;
   }
 }

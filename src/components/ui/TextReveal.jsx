@@ -83,8 +83,9 @@ export function TextReveal({
 
 /*
  * Aquí vivía `CharReveal`, la cortina letra a letra del nombre del hero. Se
- * eliminó porque el hero entra ahora como un bloque único, con una sola
- * animación en su contenedor — ver el comentario de `Hero.jsx`.
+ * eliminó al replicar la entrada de la landing de Codevia, que revela el
+ * titular por LÍNEAS (máscara + `translateY`) y no por letras. Las clases
+ * `ln-*` de `index.css` hacen ese trabajo.
  *
  * Si alguna vez se quiere recuperar un revelado por letras ahí, hay dos cosas
  * que no se pueden ignorar, las dos pagadas con depuración:
