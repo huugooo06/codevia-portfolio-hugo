@@ -54,13 +54,23 @@ function Portrait() {
       >
         {!failed ? (
           /* Dos tamaños de la misma foto. Por debajo de 1024px el retrato nunca
-             pasa de 320px de ancho (max-w-[320px]), así que mandarle el original
-             de 1200px era gastar 315 KB para pintar 84 KB de imagen — y en
-             móvil eso se nota: era el "tarda en salir la foto".
+             pasa de 320px de ancho (max-w-[320px]), así que mandarle el de
+             1200px era gastar 286 KB para pintar 96 KB de imagen — y en móvil
+             eso se nota: era el "tarda en salir la foto".
              Va con <picture> y no con srcset porque srcset deja la elección al
-             navegador, y con pantallas de 3x volvería a pedir el grande. */
+             navegador, y con pantallas de 3x volvería a pedir el grande.
+
+             ⚠️ SIN `saturate-[.92] contrast-[1.06]`. Ese ajuste de color está
+             HORNEADO en los dos JPEG, generados desde `hugo-portada.jpg` (que se
+             conserva sin tocar como maestro, y es el que usan el og:image y el
+             JSON-LD). Como filtro CSS costaba una barbaridad: medido en WebKit,
+             el motor de Safari, quitarlo bajaba de 11.674 ms a 4.244 ms por 30
+             fotogramas — prácticamente lo mismo que ocultar la foto entera. Un
+             ajuste fijo no tiene por qué recalcularse en cada fotograma.
+             Si se cambia la portada hay que regenerar ambos con el mismo
+             ajuste, o el retrato se verá distinto. */
           <picture>
-            <source media="(min-width: 1024px)" srcSet="/img/hugo-portada.jpg" />
+            <source media="(min-width: 1024px)" srcSet="/img/hugo-portada-1200.jpg" />
             <img
               src="/img/hugo-portada-760.jpg"
               alt="Retrato de Hugo Córdoba"
@@ -69,7 +79,7 @@ function Portrait() {
               fetchPriority="high"
               onError={() => setFailed(true)}
               onLoad={(e) => { if (!e.currentTarget.naturalWidth) setFailed(true) }}
-              className="h-full w-full object-cover object-[center_18%] saturate-[.92] contrast-[1.06]"
+              className="h-full w-full object-cover object-[center_18%]"
             />
           </picture>
         ) : (
@@ -178,17 +188,42 @@ export function Hero() {
 
   return (
     <section id="top" className="relative isolate overflow-hidden pt-28 lg:pt-40">
-      {/* Fondo: dos manchas de color en movimiento lento */}
+      {/*
+        Fondo: dos manchas de color en movimiento lento.
+
+        ⚠️ SIN `filter: blur()`. El desvanecido lo hacen los propios topes del
+        degradado. Esto NO es una preferencia de estilo: estas dos manchas
+        llevaban `blur-[70px]` y `blur-[80px]` y eran la causa de que en el
+        móvil la web se quedara segundos con el fondo vacío y luego apareciera
+        todo de golpe — la animación de entrada terminaba antes de que el
+        navegador consiguiera pintar el hero.
+
+        Medido en WebKit (el motor de Safari), iPhone 390×844 a 3x, 60
+        fotogramas: página en blanco 1.572 ms · una mancha animada con degradado
+        y sin desenfoque 1.574 ms (o sea, gratis) · la misma con blur(70px)
+        47.983 ms. Treinta veces el coste de toda la página, por mancha.
+
+        En Chromium la diferencia es CERO, y por eso se escapó durante varias
+        rondas de medición: hay que probar esto en WebKit.
+      */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-20 overflow-hidden">
         <div
           className={`absolute -top-[30%] left-[15%] aspect-square w-[75vw] max-w-[900px]
-                      rounded-full blur-[70px] ${reduced ? '' : 'animate-aurora-a'}`}
-          style={{ background: 'radial-gradient(circle, rgb(var(--brand) / .30), transparent 62%)' }}
+                      ${reduced ? '' : 'animate-aurora-a'}`}
+          style={{
+            background:
+              'radial-gradient(circle, rgb(var(--brand) / .26) 0%, rgb(var(--brand) / .17) 28%,' +
+              ' rgb(var(--brand) / .07) 52%, transparent 76%)',
+          }}
         />
         <div
           className={`absolute -top-[10%] right-[5%] aspect-square w-[55vw] max-w-[650px]
-                      rounded-full blur-[80px] ${reduced ? '' : 'animate-aurora-b'}`}
-          style={{ background: 'radial-gradient(circle, rgb(var(--brand-hi) / .22), transparent 65%)' }}
+                      ${reduced ? '' : 'animate-aurora-b'}`}
+          style={{
+            background:
+              'radial-gradient(circle, rgb(var(--brand-hi) / .20) 0%, rgb(var(--brand-hi) / .13) 30%,' +
+              ' rgb(var(--brand-hi) / .05) 55%, transparent 78%)',
+          }}
         />
       </div>
 
