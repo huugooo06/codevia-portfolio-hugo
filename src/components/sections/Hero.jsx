@@ -5,7 +5,6 @@ import {
 } from 'framer-motion'
 import { useMovimientoReducido } from '../../hooks/useMovimientoReducido'
 import { hero, marqueeWords } from '../../data/content'
-import { CharReveal } from '../ui/TextReveal'
 import { Button, Eyebrow, Marquee } from '../ui/Bits'
 import { GridBackdrop } from '../ui/GridBackdrop'
 import { Icon } from '../ui/Icon'
@@ -38,14 +37,12 @@ function Portrait() {
   }, [mx, my, reduced])
 
   return (
-    /* La ENTRADA va en la <figure> con CSS y el PARALAJE en el div de dentro
-       con Framer Motion. Separados a posta: son dos elementos distintos porque
-       los dos animan `transform` y en el mismo nodo se pisarían — y, sobre
-       todo, porque así la foto aparece con el HTML sin esperar al JavaScript.
-       El paralaje llega cuando llegue; es un extra, no la presencia. */
+    /* Sin animación de entrada propia: el retrato entra con el bloque del hero,
+       a la vez que el resto. Aquí dentro solo queda el paralaje de Framer
+       Motion, que es un extra posterior y no condiciona que la foto se vea. */
     <figure
       ref={ref}
-      className="entra-foto relative mx-auto w-full max-w-[320px] lg:max-w-none"
+      className="relative mx-auto w-full max-w-[320px] lg:max-w-none"
     >
       <motion.div style={reduced ? undefined : { y, scale }}>
       <motion.div
@@ -154,26 +151,27 @@ function RotatingRole() {
 }
 
 /*
- * La entrada del hero va en CSS (clase `.entra` en index.css), NO en Framer
- * Motion. Dos razones, por orden de importancia:
+ * EL HERO ENTERO ENTRA COMO UN SOLO BLOQUE, CON UNA SOLA ANIMACIÓN.
  *
- * 1. El hero es lo primero que se ve y su HTML ya llega escrito desde el build.
- *    La hoja de estilos es bloqueante y viaja en el primer viaje, así que la
- *    animación arranca con la página. Con Framer Motion habría que esperar a
- *    que bajen y se ejecuten ~140 KB de JavaScript: medido en un móvil con 4G
- *    flojo, 3,8 s con el texto invisible. Era exactamente lo que se reportó.
- * 2. Antes esto usaba `whileInView`, como el resto de secciones, y en móvil ni
- *    siquiera se disparaba: allí el retrato va primero y empuja el texto fuera
- *    del área de detección del IntersectionObserver.
+ * Pedido explícitamente por el usuario tras varias rondas: "quiero que salga
+ * todo en bloque y en transición a la vez". Y además es lo más robusto, porque
+ * elimina de raíz los dos fallos que costaron esas rondas:
  *
- * Framer Motion se queda para lo que de verdad necesita JavaScript: el
- * paralaje, la inclinación con el cursor y los revelados por scroll de las
- * secciones de abajo.
+ * 1. Con la entrada escalonada, cada trozo aparecía en un instante distinto y
+ *    cualquier parón del hilo principal se veía como una transición "trabada"
+ *    a medias.
+ * 2. `background-clip: text` (el degradado del apellido) NO alcanza a los
+ *    descendientes que estén en su propia capa de composición, y una animación
+ *    CSS crea exactamente eso. Con UNA animación en el contenedor, el elemento
+ *    del degradado no tiene nada animado dentro y se pinta siempre bien.
+ *    Comprobado en banco: animación en un envoltorio ✓, en los descendientes ✗.
+ *
+ * Va en CSS y no en Framer Motion porque el HTML del hero ya llega escrito
+ * desde el build: la hoja de estilos es bloqueante y viaja en el primer viaje,
+ * así que la animación arranca con la página en lugar de esperar a ~140 KB de
+ * JavaScript. Framer Motion se queda para lo que sí lo necesita: el paralaje,
+ * la inclinación con el cursor y los revelados por scroll de abajo.
  */
-const entrada = (retraso, clases = '') => ({
-  className: `entra ${clases}`,
-  style: { '--retraso': `${retraso}s` },
-})
 
 export function Hero() {
   const reduced = useMovimientoReducido()
@@ -197,89 +195,73 @@ export function Hero() {
       {/* Rejilla sutil */}
       <GridBackdrop opacity={0.5} />
 
-      <div className="wrap grid items-center gap-10 pb-14 lg:grid-cols-[1.08fr_.92fr] lg:gap-16 lg:pb-24">
-        {/* Retrato primero en móvil, a la derecha en escritorio */}
-        <div className="order-1 lg:order-2">
-          <Portrait />
-        </div>
+      {/* UNA sola clase `entra` aquí y nada animado por dentro: retrato, nombre,
+          textos, botones y datos aparecen todos a la vez, en la misma
+          transición. */}
+      <div className="entra">
+        <div className="wrap grid items-center gap-10 pb-14 lg:grid-cols-[1.08fr_.92fr] lg:gap-16 lg:pb-24">
+          {/* Retrato primero en móvil, a la derecha en escritorio */}
+          <div className="order-1 lg:order-2">
+            <Portrait />
+          </div>
 
-        <div className="order-2 lg:order-1">
-          <div {...entrada(0.05)}>
+          <div className="order-2 lg:order-1">
             <Eyebrow>{hero.eyebrow}</Eyebrow>
+
+            <h1 className="text-display-xl mt-5">
+              <span className="block">{hero.first}</span>
+              <span className="block italic text-gradient">{hero.last}</span>
+            </h1>
+
+            <p className="mt-6 max-w-[46ch] text-[clamp(1rem,1.5vw,1.15rem)] leading-snug">
+              Especializado en <RotatingRole />
+            </p>
+
+            <p className="mt-5 max-w-[52ch] text-[clamp(1.05rem,1.35vw,1.2rem)] leading-relaxed text-ink-soft">
+              {hero.lead}
+            </p>
+
+            <div className="mt-9 flex flex-wrap gap-3">
+              <Magnetic strength={0.25}>
+                <Button href="#proyectos">
+                  Ver proyectos
+                  <Icon name="arrow" className="h-[17px] w-[17px]" />
+                </Button>
+              </Magnetic>
+              <Magnetic strength={0.25}>
+                <Button href="#contacto" variant="ghost">Contactar</Button>
+              </Magnetic>
+            </div>
+
+            <dl
+              className="mt-11 grid grid-cols-3 gap-x-4 border-t border-line-soft pt-5
+                         [&>*:not(:first-child)]:border-l [&>*:not(:first-child)]:border-line-soft
+                         [&>*:not(:first-child)]:pl-4 sm:gap-x-6 sm:[&>*:not(:first-child)]:pl-6"
+            >
+              {hero.stats.map((s) => (
+                <div key={s.label}>
+                  <dt className="text-[11.5px] font-semibold uppercase tracking-[.12em] text-muted">
+                    {s.label}
+                  </dt>
+                  <dd className="mt-1 font-display text-[clamp(.95rem,1.1vw,1.1rem)] font-medium leading-tight">
+                    {s.value}
+                  </dd>
+                </div>
+              ))}
+            </dl>
           </div>
-
-          <h1 className="text-display-xl mt-5">
-            <CharReveal text={hero.first} className="block" delay={0.12} />
-            {/* `bloque` porque lleva degradado: con la cortina letra a letra el
-                `background-clip: text` no llega a las letras animadas y el
-                apellido se queda invisible hasta que acaba. Ver CharReveal. */}
-            <CharReveal
-              text={hero.last}
-              className="block italic text-gradient"
-              delay={0.28}
-              bloque
-            />
-          </h1>
-
-          <p {...entrada(0.45, 'mt-6 max-w-[46ch] text-[clamp(1rem,1.5vw,1.15rem)] leading-snug')}>
-            Especializado en <RotatingRole />
-          </p>
-
-          <p
-            {...entrada(
-              0.52,
-              'mt-5 max-w-[52ch] text-[clamp(1.05rem,1.35vw,1.2rem)] leading-relaxed text-ink-soft',
-            )}
-          >
-            {hero.lead}
-          </p>
-
-          <div {...entrada(0.6, 'mt-9 flex flex-wrap gap-3')}>
-            <Magnetic strength={0.25}>
-              <Button href="#proyectos">
-                Ver proyectos
-                <Icon name="arrow" className="h-[17px] w-[17px]" />
-              </Button>
-            </Magnetic>
-            <Magnetic strength={0.25}>
-              <Button href="#contacto" variant="ghost">Contactar</Button>
-            </Magnetic>
-          </div>
-
-          <dl
-            {...entrada(
-              0.68,
-              `mt-11 grid grid-cols-3 gap-x-4 border-t border-line-soft pt-5
-               [&>*:not(:first-child)]:border-l [&>*:not(:first-child)]:border-line-soft
-               [&>*:not(:first-child)]:pl-4 sm:gap-x-6 sm:[&>*:not(:first-child)]:pl-6`,
-            )}
-          >
-            {hero.stats.map((s) => (
-              <div key={s.label}>
-                <dt className="text-[11.5px] font-semibold uppercase tracking-[.12em] text-muted">
-                  {s.label}
-                </dt>
-                <dd className="mt-1 font-display text-[clamp(.95rem,1.1vw,1.1rem)] font-medium leading-tight">
-                  {s.value}
-                </dd>
-              </div>
-            ))}
-          </dl>
         </div>
-      </div>
 
-      {/* Indicador de scroll */}
-      <div
-        {...entrada(0.95, 'hidden justify-center pb-8 lg:flex')}
-        aria-hidden="true"
-      >
-        <motion.span
-          animate={reduced ? undefined : { y: [0, 8, 0] }}
-          transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
-          className="text-muted"
-        >
-          <Icon name="down" className="h-5 w-5" />
-        </motion.span>
+        {/* Indicador de scroll */}
+        <div className="hidden justify-center pb-8 lg:flex" aria-hidden="true">
+          <motion.span
+            animate={reduced ? undefined : { y: [0, 8, 0] }}
+            transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
+            className="text-muted"
+          >
+            <Icon name="down" className="h-5 w-5" />
+          </motion.span>
+        </div>
       </div>
 
       <Marquee words={marqueeWords} />

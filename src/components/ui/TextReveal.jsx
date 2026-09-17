@@ -81,62 +81,17 @@ export function TextReveal({
   )
 }
 
-/**
- * Cortina por caracteres del nombre del hero — **sin Framer Motion, en CSS**.
+/*
+ * Aquí vivía `CharReveal`, la cortina letra a letra del nombre del hero. Se
+ * eliminó porque el hero entra ahora como un bloque único, con una sola
+ * animación en su contenedor — ver el comentario de `Hero.jsx`.
  *
- * Esto no es un capricho de estilo: es lo que hace que el hero se vea rápido en
- * el móvil. El HTML llega ya escrito desde el build, y la hoja de estilos es
- * bloqueante y viaja en el primer viaje, así que esta animación arranca en
- * cuanto llega la página. Si dependiera de Framer Motion habría que esperar a
- * que bajen y se ejecuten ~140 KB de JavaScript, que en un móvil con 4G flojo
- * son más de tres segundos con el nombre en opacidad 0.
- *
- * El escalonado va con la variable `--i` (índice de la letra) y el retraso base
- * con `--retraso`, que hereda desde el contenedor. Reglas en `index.css`.
+ * Si alguna vez se quiere recuperar un revelado por letras ahí, hay dos cosas
+ * que no se pueden ignorar, las dos pagadas con depuración:
+ *  - El elemento con `.text-gradient` NO puede tener descendientes animados:
+ *    `background-clip: text` no alcanza a lo que esté en su propia capa de
+ *    composición, y una animación CSS crea justo eso. El apellido se quedaba
+ *    invisible mientras durase la animación y aparecía de golpe al terminar.
+ *  - Escalonar la entrada hace que cualquier parón del hilo principal se vea
+ *    como una transición a medias. Fue exactamente lo que se reportó en móvil.
  */
-export function CharReveal({ text, className = '', delay = 0, bloque = false }) {
-  /*
-   * `bloque` es OBLIGATORIO cuando el texto lleva `.text-gradient`, y no es una
-   * preferencia estética: es una limitación real del navegador.
-   *
-   * `background-clip: text` recorta el degradado contra el texto del elemento,
-   * pero NO alcanza a descendientes que estén en su propia capa de composición
-   * — y una animación CSS de opacidad/transform crea exactamente eso. Con la
-   * cortina letra a letra, el apellido del hero se quedaba **invisible durante
-   * toda su animación** y aparecía de golpe al terminar: eso era el "se queda
-   * trabada la transición unos segundos" del móvil.
-   *
-   * Comprobado en un banco de pruebas aparte: si la animación va en el MISMO
-   * elemento que lleva el degradado (o en un envoltorio suyo), se ve bien; si
-   * va en sus descendientes, no. Así que aquí la palabra sube entera desde
-   * detrás de la máscara en vez de letra a letra. El degradado se mantiene
-   * continuo, que es lo que se perdería repitiéndolo en cada letra.
-   */
-  if (bloque) {
-    return (
-      <span className="block overflow-hidden">
-        <span className={`cortina-bloque ${className}`} style={{ '--retraso': `${delay}s` }}>
-          {text}
-        </span>
-      </span>
-    )
-  }
-
-  return (
-    <span
-      className={`cortina ${className}`}
-      aria-label={text}
-      style={{ '--retraso': `${delay}s` }}
-    >
-      {Array.from(text).map((char, i) => (
-        <span key={i} aria-hidden="true" className="inline-block overflow-hidden align-bottom">
-          {/* El espacio se escribe como no-separable: dentro de un inline-block
-              CSS recorta el espacio normal y las letras quedarían pegadas. */}
-          <span className="cortina-letra" style={{ '--i': String(i) }}>
-            {char === ' ' ? ' ' : char}
-          </span>
-        </span>
-      ))}
-    </span>
-  )
-}

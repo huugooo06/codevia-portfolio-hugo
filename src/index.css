@@ -128,74 +128,46 @@
 @layer components {
   .wrap { @apply w-full max-w-wrap mx-auto px-5 sm:px-8 lg:px-12; }
 
-  /* ───────── Entrada del hero, en CSS y no en JavaScript ─────────
-     A propósito, y es la diferencia entre que el móvil vea el texto en medio
-     segundo o en cuatro. El HTML del hero llega ya escrito desde el build, y
-     esta hoja de estilos es bloqueante y viaja en el primer viaje: la animación
-     arranca con la página. Si la entrada dependiera de Framer Motion habría que
-     esperar a que bajen, se parseen y se ejecuten ~140 KB de JavaScript, con el
-     texto en opacidad 0 mientras tanto.
-     ⚠️ El fill-mode es `backwards`, NO `both`, y la diferencia importa:
-     `backwards` mantiene el estado inicial durante el retraso (que es lo que
-     hace falta para que no parpadee visible antes de empezar) pero al terminar
-     SUELTA los valores y el elemento vuelve a su estilo natural. `both` los
-     deja aplicados para siempre, o sea la animación nunca termina de verdad y
-     el elemento se queda en su propia capa de composición.
-     Eso rompió el apellido del hero: `.text-gradient` pinta con
-     `background-clip: text` desde el elemento padre, y si las letras están en
-     capas aparte el recorte no las alcanza — "Córdoba" desaparecía entero.
-     Con Framer Motion no pasaba porque al acabar dejaba un `transform: none`
-     estático, que no crea capa. */
+  /* ───────── Entrada del hero: UNA sola animación, todo a la vez ─────────
+     Va en CSS y no en Framer Motion a propósito: es la diferencia entre que el
+     móvil vea el hero en medio segundo o en cuatro. El HTML del hero llega ya
+     escrito desde el build y esta hoja de estilos es bloqueante y viaja en el
+     primer viaje, así que la animación arranca con la página en lugar de
+     esperar a que bajen y se ejecuten ~140 KB de JavaScript.
+
+     ⚠️ `.entra` va en UN contenedor y NADA se anima por dentro. No es solo
+     estética (el usuario lo pidió así tras ver la entrada escalonada "trabarse"
+     en el móvil): es también la única forma segura de convivir con el degradado
+     del apellido. `background-clip: text` NO alcanza a los descendientes que
+     estén en su propia capa de composición, y una animación CSS de
+     opacidad/transform crea exactamente eso, así que animar las letras dejaba
+     "Córdoba" invisible mientras durase la animación. Si algún día se vuelve a
+     escalonar la entrada, el elemento con `.text-gradient` no puede tener
+     descendientes animados.
+
+     ⚠️ El fill-mode es `backwards`, NUNCA `both`: `backwards` mantiene el
+     estado inicial durante el retraso pero SUELTA los valores al terminar.
+     `both` los deja aplicados para siempre — la animación no termina nunca de
+     verdad y el elemento se queda permanentemente en su propia capa, con el
+     mismo efecto sobre el degradado descrito arriba. */
   @keyframes entrar {
-    from { opacity: 0; transform: translateY(14px); }
+    from { opacity: 0; transform: translateY(16px); }
     to   { opacity: 1; transform: none; }
   }
   .entra {
-    animation: entrar .6s cubic-bezier(.22,.8,.32,1) backwards;
-    animation-delay: var(--retraso, 0s);
+    animation: entrar .7s cubic-bezier(.22,.8,.32,1) backwards;
   }
 
-  /* Cortina del nombre: cada letra sube desde detrás de su propio recorte.
-     `--i` es el índice de la letra, y escalona sin una línea de JavaScript. */
-  @keyframes cortina {
-    from { opacity: 0; transform: translateY(115%); }
-    to   { opacity: 1; transform: none; }
-  }
-  .cortina-letra {
-    display: inline-block;
-    animation: cortina .7s cubic-bezier(.22,.8,.32,1) backwards;
-    animation-delay: calc(var(--retraso, 0s) + var(--i, 0) * .04s);
-  }
-
-  /* La misma cortina pero de la palabra entera. Es la que hay que usar cuando
-     el texto lleva `.text-gradient`: la animación tiene que ir en el MISMO
-     elemento que el degradado, nunca en sus letras, o `background-clip: text`
-     no las alcanza y la palabra no se ve mientras anima. */
-  .cortina-bloque {
-    display: block;
-    animation: cortina .7s cubic-bezier(.22,.8,.32,1) backwards;
-    animation-delay: var(--retraso, 0s);
-  }
-
-  /* Entrada de la barra superior. También en CSS: era un `motion.header` con
-     opacidad 0, así que en el HTML pregenerado la barra llegaba invisible y no
-     aparecía hasta que cargaba el JavaScript — se veía saltar a los 2,4 s. */
+  /* La barra superior entra a la vez que el hero (mismo retraso: ninguno).
+     También en CSS: era un `motion.header` con opacidad 0, así que en el HTML
+     pregenerado llegaba invisible y saltaba a la vista a los 2,4 s, cuando
+     cargaba el JavaScript. */
   @keyframes entrar-barra {
     from { opacity: 0; transform: translateY(-80px); }
     to   { opacity: 1; transform: none; }
   }
   .entra-barra {
     animation: entrar-barra .7s cubic-bezier(.22,.8,.32,1) backwards;
-    animation-delay: .15s;
-  }
-
-  @keyframes entrar-foto {
-    from { opacity: 0; transform: translateY(30px) scale(.92); }
-    to   { opacity: 1; transform: none; }
-  }
-  .entra-foto {
-    animation: entrar-foto .8s cubic-bezier(.22,.8,.32,1) backwards;
-    animation-delay: var(--retraso, .08s);
   }
 
   /* ⚠️ AQUÍ NO VA `content-visibility: auto`. Se probó (2026-09-17) para
@@ -249,11 +221,9 @@
      Gana al `*` de arriba pese al `!important` de aquel porque un selector de
      clase tiene más especificidad que el universal. */
   @keyframes entrar       { from { opacity: 0 } to { opacity: 1 } }
-  @keyframes cortina      { from { opacity: 0 } to { opacity: 1 } }
-  @keyframes entrar-foto  { from { opacity: 0 } to { opacity: 1 } }
   @keyframes entrar-barra { from { opacity: 0 } to { opacity: 1 } }
 
-  .entra, .entra-foto, .entra-barra, .cortina-letra, .cortina-bloque {
+  .entra, .entra-barra {
     animation-duration: .5s !important;
   }
 }
