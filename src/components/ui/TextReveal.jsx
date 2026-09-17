@@ -1,6 +1,5 @@
 import { Fragment } from 'react'
-import { motion } from 'framer-motion'
-import { useMovimientoReducido } from '../../hooks/useMovimientoReducido'
+import { motion, useReducedMotion } from 'framer-motion'
 
 const EASE = [0.22, 0.8, 0.32, 1]
 const VIEWPORT = (once) => ({ once, amount: 0, margin: '0px 0px -22% 0px' })
@@ -28,7 +27,7 @@ export function TextReveal({
   stagger = 0.04,
   once = false,
 }) {
-  const reduced = useMovimientoReducido()
+  const reduced = useReducedMotion()
 
   // Con movimiento reducido, un fundido del bloque entero: sin cortina ni
   // desplazamiento, pero SIN quedarse sin animación de entrada.

@@ -1,3 +1,4 @@
+import { useMontado } from './hooks/useMontado'
 import { useTheme } from './hooks/useTheme'
 import { Nav } from './components/Nav'
 import { ScrollProgress } from './components/ScrollProgress'
@@ -12,6 +13,22 @@ import { Contact, Footer } from './components/sections/Contact'
 
 export default function App() {
   const { toggle } = useTheme()
+
+  /*
+   * Solo el hero se pregenera en el HTML del build; el resto se monta en cuanto
+   * React arranca.
+   *
+   * El motivo es medido, no teórico: con las siete secciones dentro del HTML el
+   * navegador tenía que calcular estilos y pintarlas TODAS antes de poder
+   * enseñar nada — 1,2 segundos en una sola tarea, en un móvil de gama media.
+   * El hero se veía tarde por culpa de contenido que estaba fuera de pantalla.
+   *
+   * Lo de abajo no pierde nada por montarse un poco después: está fuera de
+   * pantalla, y para cuando alguien baja ya lleva rato ahí. Respecto a lo que
+   * había antes de pregenerar nada esto no es un retroceso, porque antes se
+   * montaba así la página ENTERA, hero incluido.
+   */
+  const montado = useMontado()
 
   return (
     <>
@@ -30,15 +47,19 @@ export default function App() {
 
       <main id="main">
         <Hero />
-        <About />
-        <Stack />
-        <Projects />
-        <Timeline />
-        <Method />
-        <Contact />
+        {montado && (
+          <>
+            <About />
+            <Stack />
+            <Projects />
+            <Timeline />
+            <Method />
+            <Contact />
+          </>
+        )}
       </main>
 
-      <Footer />
+      {montado && <Footer />}
     </>
   )
 }

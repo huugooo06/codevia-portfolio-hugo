@@ -135,14 +135,23 @@
      arranca con la página. Si la entrada dependiera de Framer Motion habría que
      esperar a que bajen, se parseen y se ejecuten ~140 KB de JavaScript, con el
      texto en opacidad 0 mientras tanto.
-     `both` como fill-mode es imprescindible: mantiene el estado inicial durante
-     el retraso, si no el texto parpadearía visible antes de empezar. */
+     ⚠️ El fill-mode es `backwards`, NO `both`, y la diferencia importa:
+     `backwards` mantiene el estado inicial durante el retraso (que es lo que
+     hace falta para que no parpadee visible antes de empezar) pero al terminar
+     SUELTA los valores y el elemento vuelve a su estilo natural. `both` los
+     deja aplicados para siempre, o sea la animación nunca termina de verdad y
+     el elemento se queda en su propia capa de composición.
+     Eso rompió el apellido del hero: `.text-gradient` pinta con
+     `background-clip: text` desde el elemento padre, y si las letras están en
+     capas aparte el recorte no las alcanza — "Córdoba" desaparecía entero.
+     Con Framer Motion no pasaba porque al acabar dejaba un `transform: none`
+     estático, que no crea capa. */
   @keyframes entrar {
     from { opacity: 0; transform: translateY(14px); }
     to   { opacity: 1; transform: none; }
   }
   .entra {
-    animation: entrar .6s cubic-bezier(.22,.8,.32,1) both;
+    animation: entrar .6s cubic-bezier(.22,.8,.32,1) backwards;
     animation-delay: var(--retraso, 0s);
   }
 
@@ -154,7 +163,7 @@
   }
   .cortina-letra {
     display: inline-block;
-    animation: cortina .85s cubic-bezier(.22,.8,.32,1) both;
+    animation: cortina .85s cubic-bezier(.22,.8,.32,1) backwards;
     animation-delay: calc(var(--retraso, 0s) + var(--i, 0) * .04s);
   }
 
@@ -163,45 +172,18 @@
     to   { opacity: 1; transform: none; }
   }
   .entra-foto {
-    animation: entrar-foto .8s cubic-bezier(.22,.8,.32,1) both;
+    animation: entrar-foto .8s cubic-bezier(.22,.8,.32,1) backwards;
     animation-delay: var(--retraso, .08s);
   }
 
-  /* ───────── Pintar solo lo que se ve ─────────
-     Con el HTML ya generado en el build, el navegador calculaba estilos y
-     pintaba las SIETE secciones enteras antes de enseñar nada. Medido en un
-     móvil de gama media con 4G flojo: 2.324 ms hasta el primer pintado, de los
-     que 1,2 s eran una sola tarea haciendo esa cuenta. Con `content-visibility`
-     ese trabajo se aplaza hasta que la sección se acerca a la pantalla, y el
-     primer pintado baja a 1.308 ms.
-
-     El contenido NO desaparece: sigue en el HTML, se indexa y el buscador del
-     navegador lo encuentra. Es trabajo aplazado, no contenido ausente.
-
-     `contain-intrinsic-size` lleva la altura real medida de cada sección para
-     que la barra de scroll no dé saltos ni se descoloquen los enlaces del menú
-     mientras se baja. El `auto` de delante hace que el navegador sustituya la
-     estimación por la medida real en cuanto pinta la sección una vez, así que
-     el número solo importa para el primer cálculo. Si se cambia mucho el
-     contenido de una sección, conviene volver a medirla.
-     El hero queda fuera: es justo lo que hay que pintar cuanto antes. */
-  main > section:not(#top) { content-visibility: auto; }
-
-  #sobre-mi    { contain-intrinsic-size: auto 1311px; }
-  #stack       { contain-intrinsic-size: auto 1710px; }
-  #proyectos   { contain-intrinsic-size: auto 2206px; }
-  #trayectoria { contain-intrinsic-size: auto 980px; }
-  #metodo      { contain-intrinsic-size: auto 1055px; }
-  #contacto    { contain-intrinsic-size: auto 520px; }
-
-  @media (min-width: 1024px) {
-    #sobre-mi    { contain-intrinsic-size: auto 864px; }
-    #stack       { contain-intrinsic-size: auto 955px; }
-    #proyectos   { contain-intrinsic-size: auto 1816px; }
-    #trayectoria { contain-intrinsic-size: auto 890px; }
-    #metodo      { contain-intrinsic-size: auto 691px; }
-    #contacto    { contain-intrinsic-size: auto 648px; }
-  }
+  /* ⚠️ AQUÍ NO VA `content-visibility: auto`. Se probó (2026-09-17) para
+     ahorrar el pintado de las secciones de abajo y **rompía los revelados por
+     scroll**: al no renderizarse la sección hasta acercarse, el
+     IntersectionObserver que los dispara no la veía y varios elementos se
+     quedaban clavados en opacidad 0 — "Y además, del ciclo de Sistemas" y
+     "Grado Medio" desaparecían del todo. Ganaba ~600 ms a cambio de texto que
+     no se ve: no compensa. El coste de pintado se evita de otra forma, no
+     pregenerando lo que está fuera de pantalla (ver App.jsx). */
 
   /* Conmutador de tema: los dos iconos apilados en la misma celda y CSS decide
      cuál se ve, según el `data-theme` del <html>. Así el botón ya muestra lo

@@ -1,6 +1,5 @@
-import { motion } from 'framer-motion'
+import { motion, useReducedMotion } from 'framer-motion'
 import { techIcons } from '../../data/techIcons'
-import { useMovimientoReducido } from '../../hooks/useMovimientoReducido'
 
 /**
  * Tarjeta de tecnología: logo real + nombre.
@@ -12,7 +11,7 @@ import { useMovimientoReducido } from '../../hooks/useMovimientoReducido'
  */
 export function TechLogo({ slug, index = 0 }) {
   const icon = techIcons[slug]
-  const reduced = useMovimientoReducido()
+  const reduced = useReducedMotion()
 
   if (!icon) return null
 

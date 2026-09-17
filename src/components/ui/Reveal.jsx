@@ -1,5 +1,4 @@
-import { motion } from 'framer-motion'
-import { useMovimientoReducido } from '../../hooks/useMovimientoReducido'
+import { motion, useReducedMotion } from 'framer-motion'
 
 const OFFSETS = {
   up: { y: 40, x: 0 },
@@ -35,7 +34,7 @@ const VIEWPORT = () => ({ once: false, amount: 0, margin: '0px 0px -22% 0px' })
  * cualquier transición.
  */
 function useEntry(from = 'up', duration = 0.75) {
-  const reduced = useMovimientoReducido()
+  const reduced = useReducedMotion()
   const offset = reduced ? OFFSETS.none : (OFFSETS[from] || OFFSETS.up)
   return {
     reduced,
@@ -87,7 +86,7 @@ export function RevealGroup({
   stagger = 0.08,
   ...rest
 }) {
-  const reduced = useMovimientoReducido()
+  const reduced = useReducedMotion()
   const Tag = motion[as] || motion.div
 
   return (
@@ -119,13 +118,19 @@ const FULL_ITEM = {
   },
 }
 
+/* El `filter` va explícito aunque esta variante no desenfoque nada, y no sobra:
+   si un elemento llega a empezar con FULL_ITEM y luego se le cambian las
+   variantes a estas, Motion solo anima las propiedades que la nueva variante
+   nombra — sin esta línea el `blur(6px)` de FULL_ITEM se quedaría pegado para
+   siempre. Pasó de verdad (2026-09-17): con "reducir movimiento" activado, las
+   tarjetas de Sobre mí y Proyectos se veían permanentemente borrosas. */
 const SOFT_ITEM = {
-  hidden: { opacity: 0 },
-  show: { opacity: 1, transition: { duration: 0.5, ease: EASE } },
+  hidden: { opacity: 0, filter: 'blur(0px)' },
+  show: { opacity: 1, filter: 'blur(0px)', transition: { duration: 0.5, ease: EASE } },
 }
 
 export function RevealItem({ children, as = 'div', className = '', ...rest }) {
-  const reduced = useMovimientoReducido()
+  const reduced = useReducedMotion()
   const Tag = motion[as] || motion.div
 
   return (
